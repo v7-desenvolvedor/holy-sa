@@ -1,4 +1,4 @@
-name: Build Android Projeto GTA g
+name: Build Android Projeto GTA holysa
 
 on:
   push:
@@ -22,24 +22,29 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'gradle'
-
+          # Removi o cache inicial para evitar conflito se o download anterior corrompeu
+          
       - name: Configurar Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Instalar NDK 26
+      # Corrigi a versão do NDK para bater com o que você quer usar (26 estável)
+      - name: Instalar NDK e CMake
         run: |
-          sdkmanager "ndk;28.0.13004108" # Versão estável do NDK 26
+          sdkmanager "ndk;26.1.10909125" "cmake;3.22.1"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
 
       - name: Dar permissão ao Gradle
         run: chmod +x gradlew
 
-      - name: Compilar APK INICIANDO (.so)
-        run: ./gradlew assembleDebug
+      # Adicionei um passo de "Warmup" para garantir que o gradle baixe antes da build pesada
+      - name: Baixar Dependências
+        run: ./gradlew help
 
-      - name: Upando o apl
+      - name: Compilar APK (Debug)
+        run: ./gradlew assembleDebug --stacktrace --info
+
+      - name: Upando o APK
         uses: actions/upload-artifact@v4
         with:
           name: gta-mobile-build
-          path: app/build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/debug/*.apk
